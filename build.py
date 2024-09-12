@@ -131,7 +131,7 @@ def build_ucd():
                     if entry is None:
                         entry = '()'
                     f.write(f'  {entry},\n')
-            f.write(')')
+            f.write(')\n')
 
     with open(GENERATED_DIR.joinpath('index.typ'), 'w') as f:
         f.write('#let get-data(code) = {\n  ')
@@ -144,7 +144,7 @@ def build_ucd():
             f.write(f'    import "block-{block_id}.typ"\n')
             f.write(f'    ("{name}", block-{block_id}.data.at({key}, default: ()))\n')
             f.write('  } else ')
-        f.write('{\n    (none, ())\n  }\n}')
+        f.write('{\n    (none, ())\n  }\n}\n')
 
 
 def build_readme():
