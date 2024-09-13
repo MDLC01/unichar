@@ -60,6 +60,7 @@ def build_ucd():
 
     blocks_url = 'https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt'
     unicode_data_url = 'https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt'
+    name_aliases_url = 'https://www.unicode.org/Public/UCD/latest/ucd/NameAliases.txt'
     # Applicable as per https://www.unicode.org/copyright.html.
     license_url = 'https://www.unicode.org/license.txt'
 
@@ -110,39 +111,78 @@ def build_ucd():
         while block_content[-1] is None:
             block_content.pop()
 
-    GENERATED_DIR.mkdir(parents=True)
+    # Get name aliases.
+    alias_types = ['correction', 'control', 'alternate', 'figment', 'abbreviation']
+    aliases = {}
+    for cp, alias, alias_type in read_unicode_data_file(name_aliases_url):
+        cp = int(cp, base=16)
+        if cp not in aliases:
+            aliases[cp] = tuple([] for _ in alias_types)
+        index = alias_types.index(alias_type)
+        aliases[cp][index].append(alias)
 
+    # Write files.
+
+    GENERATED_DIR.mkdir(parents=True)
     with open(GENERATED_DIR.joinpath('LICENSE'), 'wb') as f:
         f.writelines(urllib.request.urlopen(license_url))
 
+    # Block files.
     is_block_sparse = []
     for (block_id, _, _, name), content in zip(blocks, block_contents):
         with open(GENERATED_DIR.joinpath(f'block-{block_id}.typ'), 'w') as f:
-            f.write('#let data = (\n')
             # If the block is sparse, we use a dictionary instead of an array.
             if content.count(None) > len(content) / 2:
+                f.write('#let data = (:\n')
                 is_block_sparse.append(True)
-                for i, entry in enumerate(content):
+                for cp, entry in enumerate(content):
                     if entry is not None:
-                        f.write(f'  "{i:x}": {entry},\n')
+                        f.write(f'  "{cp:x}": {entry},\n')
+                f.write(')\n')
             else:
+                f.write('#let data = (\n')
                 is_block_sparse.append(False)
                 for entry in content:
                     if entry is None:
                         entry = '()'
                     f.write(f'  {entry},\n')
-            f.write(')\n')
+                f.write(')\n')
 
+    # Aliases file.
+    with open(GENERATED_DIR.joinpath('aliases.typ'), 'w') as f:
+        f.write('#let aliases = (:\n')
+        for cp, alias_types in aliases.items():
+            f.write(f'  "{cp:x}": (')
+            for i, alias_type in enumerate(alias_types):
+                if i != 0:
+                    f.write(', ')
+                f.write('(')
+                if len(alias_type) == 1:
+                    f.write(f'"{alias_type[0]}",')
+                else:
+                    f.write(', '.join(f'"{alias}"' for alias in alias_type))
+                f.write(')')
+            f.write('),\n')
+        f.write(')')
+
+    # Index file.
     with open(GENERATED_DIR.joinpath('index.typ'), 'w') as f:
-        f.write('#let get-data(code) = {\n  ')
+        f.write('#let get-data(code) = {\n')
+        f.write('  import "aliases.typ"\n')
+        f.write('  ')
         for (block_id, first, last, name), is_sparse in zip(blocks, is_block_sparse):
             if is_sparse:
-                key = f'str(code - 0x{first:x}, base: 16)'
+                block_relative_key = f'str(code - 0x{first:x}, base: 16)'
             else:
-                key = f'code - 0x{first:x}'
+                block_relative_key = f'code - 0x{first:x}'
             f.write(f'if 0x{first:x} <= code and code <= 0x{last:x} {{\n')
             f.write(f'    import "block-{block_id}.typ"\n')
-            f.write(f'    ("{name}", block-{block_id}.data.at({key}, default: ()))\n')
+            components = ', '.join((
+                f'"{name}"',
+                f'block-{block_id}.data.at({block_relative_key}, default: ())',
+                f'aliases.aliases.at(str(code, base: 16), default: ({', '.join('()' for _ in alias_types)}))',
+            ))
+            f.write(f'    ({components})\n')
             f.write('  } else ')
         f.write('{\n    (none, ())\n  }\n}\n')
 

@@ -10,16 +10,21 @@
   }
 
   import "ucd/index.typ"
-  let data = index.get-data(code)
-
-  let (block, codepoint-data) = data
+  let (block, data, aliases) = index.get-data(code)
 
   let it = (
     code: code,
-    name: codepoint-data.at(0, default: none),
-    general-category: codepoint-data.at(1, default: none),
-    canonical-combining-class: codepoint-data.at(2, default: none),
+    name: data.at(0, default: none),
+    general-category: data.at(1, default: none),
+    canonical-combining-class: data.at(2, default: none),
     block: block,
+    aliases: (
+      corrections: aliases.at(0),
+      controls: aliases.at(1),
+      alternates: aliases.at(2),
+      figments: aliases.at(3),
+      abbreviations: aliases.at(4),
+    )
   )
 
   (
