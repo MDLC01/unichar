@@ -163,7 +163,7 @@ def build_ucd():
                     f.write(', '.join(f'"{alias}"' for alias in alias_type))
                 f.write(')')
             f.write('),\n')
-        f.write(')')
+        f.write(')\n')
 
     # Index file.
     with open(GENERATED_DIR.joinpath('index.typ'), 'w') as f:
