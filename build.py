@@ -172,7 +172,7 @@ def build_ucd():
         f.write('  ')
         for (block_id, first, last, name), is_sparse in zip(blocks, is_block_sparse):
             if is_sparse:
-                block_relative_key = f'str(code - 0x{first:x}, base: 16)'
+                block_relative_key = f'upper(str(code - 0x{first:x}, base: 16))'
             else:
                 block_relative_key = f'code - 0x{first:x}'
             f.write(f'if 0x{first:x} <= code and code <= 0x{last:x} {{\n')
@@ -180,7 +180,7 @@ def build_ucd():
             components = ', '.join((
                 f'"{name}"',
                 f'block-{block_id}.data.at({block_relative_key}, default: ())',
-                f'aliases.aliases.at(str(code, base: 16), default: ({', '.join('()' for _ in alias_types)}))',
+                f'aliases.aliases.at(upper(str(code, base: 16)), default: ({', '.join('()' for _ in alias_types)}))',
             ))
             f.write(f'    ({components})\n')
             f.write('  } else ')
