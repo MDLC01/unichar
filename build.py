@@ -178,14 +178,13 @@ def build_ucd():
             f.write(f'if 0x{first:x} <= code and code <= 0x{last:x} {{\n')
             f.write(f'    import "block-{block_id}.typ"\n')
             components = ', '.join((
-                f'"{block_name}"',
-                f'0x{block_id}',
+                f'("{block_name}", 0x{block_id}, 0x{last - first + 1:x})',
                 f'block-{block_id}.data.at({block_relative_key}, default: ())',
                 f'aliases.aliases.at(upper(str(code, base: 16)), default: ({', '.join('()' for _ in alias_types)}))',
             ))
             f.write(f'    ({components})\n')
             f.write('  } else ')
-        f.write('{\n    (none, ())\n  }\n}\n')
+        f.write('{\n    (none, (), ())\n  }\n}\n')
 
 
 def build_readme():

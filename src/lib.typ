@@ -10,7 +10,7 @@
   }
 
   import "ucd/index.typ"
-  let (block-name, block-start, data, aliases) = index.get-data(code)
+  let (block-data, character-data, aliases) = index.get-data(code)
 
   let it = (
     code: code,
@@ -21,13 +21,16 @@
       }
       "U+" + id
     },
-    name: data.at(0, default: none),
-    general-category: data.at(1, default: none),
-    canonical-combining-class: data.at(2, default: none),
-    block: (
-      name: block-name,
-      start: block-start,
-    ),
+    name: character-data.at(0, default: none),
+    general-category: character-data.at(1, default: none),
+    canonical-combining-class: character-data.at(2, default: none),
+    block: if block-data != none {
+      (
+        name: block-data.at(0),
+        start: block-data.at(1),
+        size: block-data.at(2),
+      )
+    },
     aliases: (
       corrections: aliases.at(0),
       controls: aliases.at(1),
