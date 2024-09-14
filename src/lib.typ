@@ -14,6 +14,13 @@
 
   let it = (
     code: code,
+    id: {
+      let id = upper(str(code, base: 16))
+      while id.len() < 4 {
+        id = "0" + id
+      }
+      "U+" + id
+    },
     name: data.at(0, default: none),
     general-category: data.at(1, default: none),
     canonical-combining-class: data.at(2, default: none),
@@ -33,11 +40,7 @@
   (
     ..it,
     "show": {
-      let str-code = upper(str(it.code, base: 16))
-      while str-code.len() < 4 {
-        str-code = "0" + str-code
-      }
-      raw("U+" + str-code)
+      raw(it.id)
       sym.space.nobreak
       if it.name == none {
         "<unused>"
