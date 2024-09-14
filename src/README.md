@@ -13,7 +13,7 @@ This package defines a single function: `codepoint`. It lets you get the informa
 
 ```example
 #codepoint("√").name \
-#codepoint(sym.times).block \
+#codepoint(sym.times).block.name \
 #codepoint(0x00C9).general-category
 ```
 

@@ -10,14 +10,17 @@
   }
 
   import "ucd/index.typ"
-  let (block, data, aliases) = index.get-data(code)
+  let (block-name, block-start, data, aliases) = index.get-data(code)
 
   let it = (
     code: code,
     name: data.at(0, default: none),
     general-category: data.at(1, default: none),
     canonical-combining-class: data.at(2, default: none),
-    block: block,
+    block: (
+      name: block-name,
+      start: block-start,
+    ),
     aliases: (
       corrections: aliases.at(0),
       controls: aliases.at(1),

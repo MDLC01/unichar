@@ -170,7 +170,7 @@ def build_ucd():
         f.write('#let get-data(code) = {\n')
         f.write('  import "aliases.typ"\n')
         f.write('  ')
-        for (block_id, first, last, name), is_sparse in zip(blocks, is_block_sparse):
+        for (block_id, first, last, block_name), is_sparse in zip(blocks, is_block_sparse):
             if is_sparse:
                 block_relative_key = f'upper(str(code - 0x{first:x}, base: 16))'
             else:
@@ -178,7 +178,8 @@ def build_ucd():
             f.write(f'if 0x{first:x} <= code and code <= 0x{last:x} {{\n')
             f.write(f'    import "block-{block_id}.typ"\n')
             components = ', '.join((
-                f'"{name}"',
+                f'"{block_name}"',
+                f'0x{block_id}',
                 f'block-{block_id}.data.at({block_relative_key}, default: ())',
                 f'aliases.aliases.at(upper(str(code, base: 16)), default: ({', '.join('()' for _ in alias_types)}))',
             ))
