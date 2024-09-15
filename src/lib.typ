@@ -24,6 +24,7 @@
     name: character-data.at(0, default: none),
     general-category: character-data.at(1, default: none),
     canonical-combining-class: character-data.at(2, default: none),
+    math-class: character-data.at(3, default: none),
     block: if block-data != none {
       (
         name: block-data.at(0),

@@ -55,13 +55,23 @@ def read_unicode_data_file(url):
     return entries
 
 
+def codepoint_range(r):
+    if '..' in r:
+        [first, last] = r.split('..')
+        for cp in range(int(first, base=16), int(last, base=16) + 1):
+            yield cp
+    else:
+        yield int(r, base=16)
+
+
 def build_ucd():
     print('Building Unicode Character Database...')
 
     blocks_url = 'https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt'
     unicode_data_url = 'https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt'
     name_aliases_url = 'https://www.unicode.org/Public/UCD/latest/ucd/NameAliases.txt'
-    # Applicable as per https://www.unicode.org/copyright.html.
+    math_class_url = 'https://www.unicode.org/Public/math/latest/MathClass-15.txt'
+    # License applicable as per https://www.unicode.org/copyright.html.
     license_url = 'https://www.unicode.org/license.txt'
 
     # Get block list.
@@ -70,6 +80,12 @@ def build_ucd():
     for block_range, name in read_unicode_data_file(blocks_url):
         [first, last] = block_range.split('..')
         blocks.append((first, int(first, base=16), int(last, base=16), name))
+
+    # Get math classes.
+    math_classes = {}
+    for r, math_class in read_unicode_data_file(math_class_url):
+        for cp in codepoint_range(r):
+            math_classes[cp] = f'"{math_class}"'
 
     # Get data for the codepoints of each block.
     block_contents = [[None] * (last - first + 1) for _, first, last, _ in blocks]
@@ -101,6 +117,7 @@ def build_ucd():
                     f'"{name}"',
                     f'"{general_category}"',
                     f'{canonical_combining_class}',
+                    f'{math_classes.get(cp, 'none')}',
                 ])})'
                 break
         else:
