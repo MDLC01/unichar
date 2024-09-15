@@ -19,7 +19,7 @@
       while id.len() < 4 {
         id = "0" + id
       }
-      "U+" + id
+      id
     },
     name: character-data.at(0, default: none),
     general-category: character-data.at(1, default: none),
