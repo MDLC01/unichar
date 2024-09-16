@@ -44,7 +44,7 @@
   (
     ..it,
     "show": {
-      raw(it.id)
+      raw("U+" + it.id)
       sym.space.nobreak
       if it.name == none {
         "<unused>"
