@@ -1,6 +1,6 @@
 [package]
 name = "unichar"
-version = "0.2.0"
+version = "0.3.0"
 entrypoint = "lib.typ"
 authors = ["Malo <@MDLC01>"]
 license = "MIT AND Unicode-3.0"

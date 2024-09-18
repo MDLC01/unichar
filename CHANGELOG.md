@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 0.3.0
+
+- Add `math-class` attribute to codepoints.
+    - Some codepoints have their math class overridden by Typst. This is the Unicode math class, not the one used by Typst.
+
+- The `id` of codepoints now returns a string without the `"U+"` prefix.
+
 ## Version 0.2.0
 
 - Codepoints now have an `id` attribute which is its corresponding "U+xxxx" string.
