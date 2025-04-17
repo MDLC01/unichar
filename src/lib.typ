@@ -1,6 +1,6 @@
-/// Create a `codepoint` object.
+/// Creates a `codepoint` object.
 ///
-/// You can convert a to content `codepoint` using its `show` field:
+/// You can convert a `codepoint` to content using its `show` field:
 /// ```example
 /// #codepoint("¤").show
 /// ```
