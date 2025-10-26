@@ -44,15 +44,14 @@
   (
     ..it,
     "show": {
-      raw("U+" + it.id)
+      [U+#it.id]
       sym.space.nobreak
       if it.name == none {
         "<unused>"
       } else if it.name.starts-with("<") {
         it.name
       } else {
-        // The character appears bigger without increasing line height.
-        text(size: 1.2em, top-edge: "x-height", str.from-unicode(it.code))
+        str.from-unicode(it.code)
         sym.space
         smallcaps(lower(it.name))
       }
