@@ -38,7 +38,7 @@
       alternates: aliases.at(2),
       figments: aliases.at(3),
       abbreviations: aliases.at(4),
-    )
+    ),
   )
 
   (

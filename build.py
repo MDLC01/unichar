@@ -183,6 +183,7 @@ def build_ucd():
         f.write(')\n')
 
     # Index file.
+    default_aliases = f'({', '.join('()' for _ in alias_types)})'
     with open(GENERATED_DIR.joinpath('index.typ'), 'w') as f:
         f.write('#let get-data(code) = {\n')
         f.write('  import "aliases.typ"\n')
@@ -197,11 +198,11 @@ def build_ucd():
             components = ', '.join((
                 f'("{block_name}", 0x{block_id}, 0x{last - first + 1:x})',
                 f'block-{block_id}.data.at({block_relative_key}, default: ())',
-                f'aliases.aliases.at(upper(str(code, base: 16)), default: ({', '.join('()' for _ in alias_types)}))',
+                f'aliases.aliases.at(upper(str(code, base: 16)), default: {default_aliases})',
             ))
             f.write(f'    ({components})\n')
             f.write('  } else ')
-        f.write('{\n    (none, (), ())\n  }\n}\n')
+        f.write(f'{{\n    (none, (), {default_aliases})\n  }}\n}}\n')
 
 
 def build_readme():
