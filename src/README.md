@@ -22,7 +22,7 @@ You can display a codepoint in the style of [Template:Unichar](https://en.wikipe
 
 ```example
 #codepoint("¤").show \
-#codepoint(sym.copyright).show \
+#codepoint(sym.angzarr).show \
 #codepoint(0x1249).show \
 #codepoint(0x100000).show
 ```
