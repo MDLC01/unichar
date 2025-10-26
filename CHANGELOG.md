@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.3.1
+
+- Improve `codepoint` show rule.
+- Fix a panic occurring when using a codepoint that does not belong to a block.
+- Update to Unicode 17.0.0.
+
 ## Version 0.3.0
 
 - Add `math-class` attribute to codepoints.
