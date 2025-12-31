@@ -154,7 +154,7 @@ def build_ucd():
                 is_block_sparse.append(True)
                 for cp, entry in enumerate(content):
                     if entry is not None:
-                        f.write(f'  "{cp:x}": {entry},\n')
+                        f.write(f'  "{cp:X}": {entry},\n')
                 f.write(')\n')
             else:
                 f.write('#let data = (\n')
@@ -169,7 +169,7 @@ def build_ucd():
     with open(GENERATED_DIR.joinpath('aliases.typ'), 'w') as f:
         f.write('#let aliases = (:\n')
         for cp, alias_types in aliases.items():
-            f.write(f'  "{cp:x}": (')
+            f.write(f'  "{cp:X}": (')
             for i, alias_type in enumerate(alias_types):
                 if i != 0:
                     f.write(', ')
@@ -190,13 +190,13 @@ def build_ucd():
         f.write('  ')
         for (block_id, first, last, block_name), is_sparse in zip(blocks, is_block_sparse):
             if is_sparse:
-                block_relative_key = f'upper(str(code - 0x{first:x}, base: 16))'
+                block_relative_key = f'upper(str(code - 0x{first:X}, base: 16))'
             else:
-                block_relative_key = f'code - 0x{first:x}'
-            f.write(f'if 0x{first:x} <= code and code <= 0x{last:x} {{\n')
+                block_relative_key = f'code - 0x{first:X}'
+            f.write(f'if 0x{first:X} <= code and code <= 0x{last:X} {{\n')
             f.write(f'    import "block-{block_id}.typ"\n')
             components = ', '.join((
-                f'("{block_name}", 0x{block_id}, 0x{last - first + 1:x})',
+                f'("{block_name}", 0x{block_id}, 0x{last - first + 1:X})',
                 f'block-{block_id}.data.at({block_relative_key}, default: ())',
                 f'aliases.aliases.at(upper(str(code, base: 16)), default: {default_aliases})',
             ))
