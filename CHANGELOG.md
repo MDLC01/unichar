@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.3.2
+
+- Fix a bug where some information would not be retrieved properly.
+
 ## Version 0.3.1
 
 - Improve `codepoint` show rule.
