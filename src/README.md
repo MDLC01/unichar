@@ -21,7 +21,7 @@ This package defines a single function: `codepoint`. It lets you get the informa
 You can display a codepoint in the style of [Template:Unichar](https://en.wikipedia.org/wiki/Template:Unichar) using the `show` entry:
 
 ```example
-#codepoint("¤").show \
+#codepoint(sym.aleph).show \
 #codepoint(sym.angzarr).show \
 #codepoint(0x1249).show \
 #codepoint(0x100000).show

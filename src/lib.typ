@@ -49,6 +49,7 @@
   (
     ..it,
     "show": {
+      set text(lang: "en", region: "US", dir: ltr)
       [U+#it.id]
       sym.space.nobreak
       if it.name == none {
@@ -56,7 +57,10 @@
       } else if it.name.starts-with("<") {
         it.name
       } else {
+        // The displayed character is surrounded with bidi isolation characters.
+        "\u{2068}"
         str.from-unicode(it.code)
+        "\u{2069}"
         sym.space
         smallcaps(all: true, it.name)
       }
