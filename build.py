@@ -11,8 +11,8 @@ from pathlib import Path
 
 
 LIBRARY_DIR = Path('src/')
+PLUGIN_DIR = Path('plugin/')
 TARGET_DIR = Path('target/')
-GENERATED_DIR = TARGET_DIR.joinpath('ucd/')
 LICENSE = Path('LICENSE')
 CHANGELOG = Path('CHANGELOG.md')
 README = 'README.md'
@@ -64,145 +64,20 @@ def codepoint_range(r):
         yield int(r, base=16)
 
 
-def build_ucd():
-    print('Building Unicode Character Database...')
+def build_plugin():
+    print('Building plugin...')
 
-    blocks_url = 'https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt'
-    unicode_data_url = 'https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt'
-    name_aliases_url = 'https://www.unicode.org/Public/UCD/latest/ucd/NameAliases.txt'
-    math_class_url = 'https://www.unicode.org/Public/math/latest/MathClass-15.txt'
-    # License applicable as per https://www.unicode.org/copyright.html.
-    license_url = 'https://www.unicode.org/license.txt'
+    BUILD_TARGET = 'wasm32-unknown-unknown'
+    PLUGIN_PATH = PLUGIN_DIR.joinpath('target', BUILD_TARGET, 'release', 'unichar_plugin.wasm')
+    PLUGIN_NAME = 'plugin.wasm'
 
-    # Get block list.
-    # https://unicode.org/reports/tr44/#Blocks.txt
-    blocks = []
-    for block_range, name in read_unicode_data_file(blocks_url):
-        [first, last] = block_range.split('..')
-        blocks.append((first, int(first, base=16), int(last, base=16), name))
+    subprocess.run(
+        ['cargo', 'build', '--release', '--target', BUILD_TARGET, '--quiet'],
+        cwd=PLUGIN_DIR,
+        check=True,
+    )
 
-    # Get math classes.
-    math_classes = {}
-    for r, math_class in read_unicode_data_file(math_class_url):
-        for cp in codepoint_range(r):
-            math_classes[cp] = f'"{math_class}"'
-
-    # Get data for the codepoints of each block.
-    block_contents = [[None] * (last - first + 1) for _, first, last, _ in blocks]
-    # https://unicode.org/reports/tr44/#UnicodeData.txt
-    for (
-        cp,
-        name,
-        general_category,
-        canonical_combining_class,
-        bidi_class,
-        # https://unicode.org/reports/tr44/#Decomposition_Type
-        decomposition,
-        # https://unicode.org/reports/tr44/#Numeric_Type
-        _,
-        _,
-        numeric_value,
-        bidi_mirrored,
-        _unicode_1_name,
-        _iso_comment,
-        simple_uppercase_mapping,
-        simple_lowercase_mapping,
-        # Note that if empty, this should fall back to Simple_Uppercase_Mapping.
-        simple_titlecase_mapping,
-    ) in read_unicode_data_file(unicode_data_url):
-        cp = int(cp, base=16)
-        for block_content, (_, block_first, block_last, _) in zip(block_contents, blocks):
-            if block_first <= cp <= block_last:
-                block_content[cp - block_first] = f'({', '.join([
-                    f'"{name}"',
-                    f'"{general_category}"',
-                    f'{canonical_combining_class}',
-                    f'{math_classes.get(cp, 'none')}',
-                ])})'
-                break
-        else:
-            raise ValueError('Valid codepoint outside block.')
-
-    # Clean-up data.
-    for block_content in block_contents:
-        while block_content[-1] is None:
-            block_content.pop()
-
-    # Get name aliases.
-    alias_types = ['correction', 'control', 'alternate', 'figment', 'abbreviation']
-    aliases = {}
-    for cp, alias, alias_type in read_unicode_data_file(name_aliases_url):
-        cp = int(cp, base=16)
-        if cp not in aliases:
-            aliases[cp] = tuple([] for _ in alias_types)
-        index = alias_types.index(alias_type)
-        aliases[cp][index].append(alias)
-
-    # Write files.
-
-    GENERATED_DIR.mkdir(parents=True)
-    with open(GENERATED_DIR.joinpath('LICENSE'), 'wb') as f:
-        f.writelines(urllib.request.urlopen(license_url))
-
-    # Block files.
-    is_block_sparse = []
-    for (block_id, _, _, name), content in zip(blocks, block_contents):
-        with open(GENERATED_DIR.joinpath(f'block-{block_id}.typ'), 'w') as f:
-            # If the block is sparse, we use a dictionary instead of an array.
-            if content.count(None) > len(content) / 2:
-                f.write('#let data = (:\n')
-                is_block_sparse.append(True)
-                for cp, entry in enumerate(content):
-                    if entry is not None:
-                        f.write(f'  "{cp:X}": {entry},\n')
-                f.write(')\n')
-            else:
-                f.write('#let data = (\n')
-                is_block_sparse.append(False)
-                for entry in content:
-                    if entry is None:
-                        entry = '()'
-                    f.write(f'  {entry},\n')
-                f.write(')\n')
-
-    # Aliases file.
-    with open(GENERATED_DIR.joinpath('aliases.typ'), 'w') as f:
-        f.write('#let aliases = (:\n')
-        for cp, alias_types in aliases.items():
-            f.write(f'  "{cp:X}": (')
-            for i, alias_type in enumerate(alias_types):
-                if i != 0:
-                    f.write(', ')
-                f.write('(')
-                if len(alias_type) == 1:
-                    f.write(f'"{alias_type[0]}",')
-                else:
-                    f.write(', '.join(f'"{alias}"' for alias in alias_type))
-                f.write(')')
-            f.write('),\n')
-        f.write(')\n')
-
-    # Index file.
-    default_aliases = f'({', '.join('()' for _ in alias_types)})'
-    with open(GENERATED_DIR.joinpath('index.typ'), 'w') as f:
-        f.write('#let get-data(code) = {\n')
-        f.write('  import "aliases.typ"\n')
-        f.write('  ')
-        for (block_id, first, last, block_name), is_sparse in zip(blocks, is_block_sparse):
-            if is_sparse:
-                block_relative_key = f'upper(str(code - 0x{first:X}, base: 16))'
-            else:
-                block_relative_key = f'code - 0x{first:X}'
-            f.write(f'if 0x{first:X} <= code and code <= 0x{last:X} {{\n')
-            f.write(f'    import "block-{block_id}.typ"\n')
-            components = ', '.join((
-                f'("{block_name}", 0x{block_id}, 0x{last - first + 1:X})',
-                f'block-{block_id}.data.at({block_relative_key}, default: ())',
-                f'aliases.aliases.at(upper(str(code, base: 16)), default: {default_aliases})',
-            ))
-            f.write(f'    ({components})\n')
-            f.write('  } else ')
-        f.write(f'{{\n    (none, (), {default_aliases})\n  }}\n}}\n')
+    shutil.copyfile(PLUGIN_PATH, TARGET_DIR.joinpath(PLUGIN_NAME))
 
 
 def build_readme():
@@ -286,7 +161,7 @@ def build_readme():
 def main():
     delete_directory_content(TARGET_DIR)
     copy_library()
-    build_ucd()
+    build_plugin()
     build_readme()
 
 

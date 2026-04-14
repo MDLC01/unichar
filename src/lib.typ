@@ -9,8 +9,13 @@
     code = str.to-unicode(code)
   }
 
-  import "ucd/index.typ"
-  let (block-data, character-data, aliases) = index.get-data(code)
+  // Make sure the value is within the Unicode codespace.
+  if not (0 <= code and code <= 0x10FFFF) {
+    panic(upper(str(code, base: 0x10)) + " is not a valid codepoint")
+  }
+
+  import "internals.typ"
+  let (block-data, character-data, aliases) = internals.get-data(code)
 
   let it = (
     code: code,
@@ -27,9 +32,9 @@
     math-class: character-data.at(3, default: none),
     block: if block-data != none {
       (
-        name: block-data.at(0),
-        start: block-data.at(1),
-        size: block-data.at(2),
+        start: block-data.at(0),
+        size: block-data.at(1),
+        name: block-data.at(2),
       )
     },
     aliases: (
