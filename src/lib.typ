@@ -58,7 +58,7 @@
       } else {
         str.from-unicode(it.code)
         sym.space
-        smallcaps(lower(it.name))
+        smallcaps(all: true, it.name)
       }
     },
   )
