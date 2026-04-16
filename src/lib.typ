@@ -33,7 +33,7 @@
     block: if block-data != none {
       (
         start: block-data.at(0),
-        size: block-data.at(1),
+        last: block-data.at(1),
         name: block-data.at(2),
       )
     },
