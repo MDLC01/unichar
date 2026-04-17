@@ -125,6 +125,34 @@ fn build_codepoint_data(buf: &mut String) {
     buf.push_str("}\n");
 }
 
+/// Converts a Unicode class name from the data files to the name used in Typst.
+///
+/// Note that Typst does not assign a name to all Unicode math classes. For the
+/// ones that don't have a name in Typst, we use the most typst-y name.
+///
+/// - [Unicode names](https://www.unicode.org/reports/tr25/tr25-16.html#mathematical_classification_0)
+/// - [Typst names](https://typst.app/docs/reference/math/class/#parameters-class)
+fn typst_math_class(c: &str) -> &'static str {
+    match c {
+        "N" => "normal",
+        "A" => "alphabetic",
+        "B" => "binary",
+        "C" => "closing",
+        "D" => "diacritic",
+        "F" => "fence",
+        "G" => "glyphpart",
+        "O" => "opening",
+        "L" => "large",
+        "P" => "punctuation",
+        "R" => "relation",
+        "S" => "space",
+        "U" => "unary",
+        "V" => "vary",
+        "X" => "special",
+        _ => unreachable!("illegal math class"),
+    }
+}
+
 fn build_math_data(buf: &mut String) {
     let math_class_file_url = format!(
         "https://www.unicode.org/Public/math/revision-{UTR25_REVISION}/MathClass-{UTR25_REVISION}.txt",
@@ -134,8 +162,9 @@ fn build_math_data(buf: &mut String) {
     for line in get_unicode_data_file(&math_class_file_url) {
         let [range, math_class] = line.as_array().unwrap();
         let (first, last) = parse_codepoint_range(range);
+        let typst_math_class = typst_math_class(math_class);
         buf.push_str(&format!(
-            "        0x{first:04X}..=0x{last:04X} => Some({math_class:?}),\n",
+            "        0x{first:04X}..=0x{last:04X} => Some({typst_math_class:?}),\n",
         ));
     }
     buf.push_str("        _ => None,\n");

@@ -117,7 +117,7 @@ pub fn get_codepoint_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
             encoder.push(data.name);
             encoder.push(data.general_category);
             encoder.push(data.canonical_combining_class);
-            encoder.push(generated::math_data(value).unwrap_or(""));
+            encoder.push(generated::math_data(value).unwrap_or_default());
             Ok(encoder.finish())
         }
     }
