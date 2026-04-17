@@ -15,7 +15,7 @@
   }
 
   import "internals.typ"
-  let (block-data, character-data, aliases) = internals.get-data(code)
+  let (block-data, codepoint-data, aliases) = internals.get-data(code)
 
   let it = (
     code: code,
@@ -26,10 +26,10 @@
       }
       id
     },
-    name: character-data.at(0, default: none),
-    general-category: character-data.at(1, default: none),
-    canonical-combining-class: character-data.at(2, default: none),
-    math-class: character-data.at(3, default: none),
+    name: codepoint-data.at(0, default: none),
+    general-category: codepoint-data.at(1, default: none),
+    canonical-combining-class: codepoint-data.at(2, default: none),
+    math-class: codepoint-data.at(3, default: none),
     block: if block-data != none {
       (
         start: block-data.at(0),

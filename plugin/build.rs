@@ -1,62 +1,25 @@
+#[path = "src/shared.rs"]
+mod shared;
+
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-use std::num::ParseIntError;
 use std::path::Path;
-use std::str::FromStr;
+
+use crate::shared::{BlockData, CodepointData};
 
 const UNICODE_VERSION: &str = "17.0.0";
 const UTR25_REVISION: &str = "15";
 
-#[derive(Hash, Copy, Clone, Eq, PartialEq)]
-struct Codepoint(u32);
-
-impl FromStr for Codepoint {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(u32::from_str_radix(s.trim(), 0x10)?))
-    }
+fn parse_codepoint(s: &str) -> u32 {
+    u32::from_str_radix(s.trim(), 0x10).unwrap()
 }
 
-impl Debug for Codepoint {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{:04X}", self.0)
-    }
-}
-
-#[derive(Copy, Clone)]
-struct CodepointRange {
-    first: Codepoint,
-    last: Codepoint,
-}
-
-impl FromStr for CodepointRange {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.split_once("..") {
-            None => {
-                let cp = s.parse()?;
-                Ok(Self {
-                    first: cp,
-                    last: cp,
-                })
-            }
-            Some((first, last)) => Ok(Self {
-                first: first.parse()?,
-                last: last.parse()?,
-            }),
+fn parse_codepoint_range(s: &str) -> (u32, u32) {
+    match s.split_once("..") {
+        None => {
+            let cp = parse_codepoint(s);
+            (cp, cp)
         }
-    }
-}
-
-impl Debug for CodepointRange {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.first == self.last {
-            write!(f, "{:?}", self.first)
-        } else {
-            write!(f, "{:?}..={:?}", self.first, self.last)
-        }
+        Some((first, last)) => (parse_codepoint(first), parse_codepoint(last)),
     }
 }
 
@@ -92,29 +55,31 @@ fn ucd(file: &str) -> String {
 }
 
 fn build_block_data(buf: &mut String) {
-    buf.push_str("fn block_data(cp: u32) -> Option<(u32, u32, &'static str)> {\n");
+    buf.push_str("pub fn block_data(cp: u32) -> Option<BlockData<'static>> {\n");
     buf.push_str("    match cp {\n");
     for line in get_unicode_data_file(&ucd("Blocks.txt")) {
         let [range, name] = line.as_array().unwrap();
-        let range = CodepointRange::from_str(range).unwrap();
-        let properties = (range.first, range.last, name);
-        buf.push_str(&format!("        {range:?} => Some({properties:?}),\n"));
+        let (first, last) = parse_codepoint_range(range);
+        let data = BlockData { first, last, name };
+        buf.push_str(&format!(
+            "        0x{first:04X}..=0x{last:04X} => Some({data:?}),\n"
+        ));
     }
     buf.push_str("        _ => None,\n");
     buf.push_str("    }\n");
     buf.push_str("}\n");
 }
 
-fn build_character_data(buf: &mut String) {
+fn build_codepoint_data(buf: &mut String) {
     // We have to split this into multiple functions because a single function
     // would have too many local constants.
     // plugin panicked: tried to allocate too many function local constant values
     let mut batches = Vec::new();
     for batch in get_unicode_data_file(&ucd("UnicodeData.txt")).chunks(10000) {
-        let batch_name = format!("character_data_{}", batches.len());
+        let batch_name = format!("codepoint_data_{}", batches.len());
         buf.push_str("#[inline(never)]\n");
         buf.push_str(&format!(
-            "fn {batch_name}(cp: u32) -> Option<(&'static str, &'static str, &'static str)> {{\n"
+            "fn {batch_name}(cp: u32) -> Option<CodepointData<'static>> {{\n"
         ));
         batches.push(batch_name);
         buf.push_str("    match cp {\n");
@@ -139,18 +104,20 @@ fn build_character_data(buf: &mut String) {
                 // Note that if empty, this should fall back to Simple_Uppercase_Mapping.
                 _simple_titlecase_mapping,
             ] = line.as_array().unwrap();
-            let cp = Codepoint::from_str(cp).unwrap();
-            let properties = (name, general_category, canonical_combining_class);
-            buf.push_str(&format!("        {cp:?} => Some({properties:?}),\n",));
+            let cp = parse_codepoint(cp);
+            let data = CodepointData {
+                name,
+                general_category,
+                canonical_combining_class,
+            };
+            buf.push_str(&format!("        0x{cp:04X} => Some({data:?}),\n",));
         }
         buf.push_str("        _ => None,\n");
         buf.push_str("    }\n");
         buf.push_str("}\n");
     }
 
-    buf.push_str(
-        "fn character_data(cp: u32) -> Option<(&'static str, &'static str, &'static str)> {\n",
-    );
+    buf.push_str("pub fn codepoint_data(cp: u32) -> Option<CodepointData<'static>> {\n");
     buf.push_str("    None\n");
     for batch_name in batches {
         buf.push_str(&format!("        .or_else(|| {batch_name}(cp))\n",));
@@ -162,12 +129,14 @@ fn build_math_data(buf: &mut String) {
     let math_class_file_url = format!(
         "https://www.unicode.org/Public/math/revision-{UTR25_REVISION}/MathClass-{UTR25_REVISION}.txt",
     );
-    buf.push_str("fn math_data(cp: u32) -> Option<&'static str> {\n");
+    buf.push_str("pub fn math_data(cp: u32) -> Option<&'static str> {\n");
     buf.push_str("    match cp {\n");
     for line in get_unicode_data_file(&math_class_file_url) {
-        let [cp, math_class] = line.as_array().unwrap();
-        let range = CodepointRange::from_str(cp).unwrap();
-        buf.push_str(&format!("        {range:?} => Some({math_class:?}),\n",));
+        let [range, math_class] = line.as_array().unwrap();
+        let (first, last) = parse_codepoint_range(range);
+        buf.push_str(&format!(
+            "        0x{first:04X}..=0x{last:04X} => Some({math_class:?}),\n",
+        ));
     }
     buf.push_str("        _ => None,\n");
     buf.push_str("    }\n");
@@ -182,7 +151,7 @@ fn build_alias_data(buf: &mut String) {
     let mut abbreviations = HashMap::<_, Vec<_>>::new();
     for line in get_unicode_data_file(&ucd("NameAliases.txt")) {
         let [cp, alias, alias_type] = line.as_array().unwrap();
-        let cp = Codepoint::from_str(cp).unwrap();
+        let cp = parse_codepoint(cp);
         match alias_type.as_ref() {
             "correction" => corrections.entry(cp).or_default().push(alias.clone()),
             "control" => controls.entry(cp).or_default().push(alias.clone()),
@@ -200,11 +169,13 @@ fn build_alias_data(buf: &mut String) {
         .chain(figments.keys())
         .chain(abbreviations.keys())
         .collect::<Vec<_>>();
-    keys.sort_by_key(|cp| cp.0);
+    keys.sort();
     keys.dedup();
 
     let return_type = "&'static [&'static str], ".repeat(5);
-    buf.push_str(&format!("fn alias_data(cp: u32) -> ({return_type}) {{\n"));
+    buf.push_str(&format!(
+        "pub fn alias_data(cp: u32) -> ({return_type}) {{\n"
+    ));
     buf.push_str("    match cp {\n");
     for cp in keys {
         let empty = Vec::new();
@@ -216,7 +187,7 @@ fn build_alias_data(buf: &mut String) {
             figments.get(cp).unwrap_or(&empty),
             abbreviations.get(cp).unwrap_or(&empty),
         );
-        buf.push_str(&format!("        {cp:?} => {properties},\n"));
+        buf.push_str(&format!("        0x{cp:04X} => {properties},\n"));
     }
     buf.push_str("        _ => (&[], &[], &[], &[], &[]),\n");
     buf.push_str("    }\n");
@@ -228,7 +199,7 @@ fn main() {
 
     let mut buf = String::new();
     build_block_data(&mut buf);
-    build_character_data(&mut buf);
+    build_codepoint_data(&mut buf);
     build_math_data(&mut buf);
     build_alias_data(&mut buf);
 

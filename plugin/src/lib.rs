@@ -1,8 +1,9 @@
+mod generated;
+mod shared;
+
 use wasm_minimal_protocol::{initiate_protocol, wasm_func};
 
 initiate_protocol!();
-
-include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
 /// A trait for types whose values can be encoded into bytes.
 ///
@@ -95,13 +96,13 @@ fn decode_codepoint(codepoint: &[u8]) -> Result<u32, &str> {
 #[wasm_func]
 pub fn get_block_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
     let value = decode_codepoint(codepoint)?;
-    match block_data(value) {
+    match generated::block_data(value) {
         None => Ok(Vec::new()),
-        Some((first, last, name)) => {
+        Some(data) => {
             let mut encoder = Encoder::new();
-            encoder.push(&first);
-            encoder.push(&last);
-            Ok(encoder.finish_with(name))
+            encoder.push(&data.first);
+            encoder.push(&data.last);
+            Ok(encoder.finish_with(data.name))
         }
     }
 }
@@ -109,14 +110,14 @@ pub fn get_block_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
 #[wasm_func]
 pub fn get_codepoint_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
     let value = decode_codepoint(codepoint)?;
-    match character_data(value) {
+    match generated::codepoint_data(value) {
         None => Ok(Vec::new()),
-        Some((name, general_category, canonical_combining_class)) => {
+        Some(data) => {
             let mut encoder = Encoder::new();
-            encoder.push(name);
-            encoder.push(general_category);
-            encoder.push(canonical_combining_class);
-            encoder.push(math_data(value).unwrap_or(""));
+            encoder.push(data.name);
+            encoder.push(data.general_category);
+            encoder.push(data.canonical_combining_class);
+            encoder.push(generated::math_data(value).unwrap_or(""));
             Ok(encoder.finish())
         }
     }
@@ -124,8 +125,8 @@ pub fn get_codepoint_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
 
 #[wasm_func]
 pub fn get_alias_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
-    let value= decode_codepoint(codepoint)?;
-    let (corrections, controls, alternates, figments, abbreviations) = alias_data(value);
+    let value = decode_codepoint(codepoint)?;
+    let (corrections, controls, alternates, figments, abbreviations) = generated::alias_data(value);
     let mut encoder = Encoder::new();
     encoder.push(corrections);
     encoder.push(controls);
