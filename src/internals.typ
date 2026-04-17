@@ -113,6 +113,7 @@
       read-vec.with(read-string),
       read-vec.with(read-string),
       read-vec.with(read-string),
+      read-vec.with(read-string),
       raw-alias-data,
     )
   )

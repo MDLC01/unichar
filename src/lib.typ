@@ -44,6 +44,9 @@
       figments: aliases.at(3),
       abbreviations: aliases.at(4),
     ),
+    info: (
+      aliases: aliases.at(5),
+    ),
   )
 
   (

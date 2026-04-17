@@ -15,7 +15,8 @@ This package defines a single function: `codepoint`. It lets you get the informa
 #codepoint("√").name \
 #codepoint(sym.times).block.name \
 #codepoint(0x00C9).general-category \
-#codepoint(sym.eq).math-class
+#codepoint(sym.eq).math-class \
+#codepoint("⧖").info.aliases
 ```
 
 You can display a codepoint in the style of [Template:Unichar](https://en.wikipedia.org/wiki/Template:Unichar) using the `show` entry:

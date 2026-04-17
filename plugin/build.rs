@@ -23,17 +23,22 @@ fn parse_codepoint_range(s: &str) -> (u32, u32) {
     }
 }
 
-/// Returns non-empty lines of a Unicode data file.
-///
-/// Each line consists of multiple entries, separated by semicolons. Comments
-/// and whitespace are properly stripped.
-fn get_unicode_data_file(url: &str) -> Vec<Vec<String>> {
+/// Returns the string content of a remote file.
+fn read_remote_file(url: &str) -> String {
     ureq::get(url)
         .call()
         .unwrap()
         .body_mut()
         .read_to_string()
         .unwrap()
+}
+
+/// Returns non-empty lines of a Unicode data file.
+///
+/// Each line consists of multiple entries, separated by semicolons. Comments
+/// and whitespace are properly stripped.
+fn get_unicode_data_file(url: &str) -> Vec<Vec<String>> {
+    read_remote_file(url)
         .lines()
         .map(|line| {
             line.split_once('#')
@@ -172,6 +177,7 @@ fn build_math_data(buf: &mut String) {
     buf.push_str("}\n");
 }
 
+/// Provides access to formal aliases.
 fn build_alias_data(buf: &mut String) {
     let mut corrections = HashMap::<_, Vec<_>>::new();
     let mut controls = HashMap::<_, Vec<_>>::new();
@@ -223,6 +229,53 @@ fn build_alias_data(buf: &mut String) {
     buf.push_str("}\n");
 }
 
+/// Provides information from
+/// [NamesList.txt](https://www.unicode.org/Public/UCD/latest/ucd/NamesList.html).
+///
+/// For now, this only reads informative aliases.
+fn build_info_data(buf: &mut String) {
+    let mut info_aliases = HashMap::<_, Vec<_>>::new();
+    let mut last_char = None;
+    // Grammar: https://www.unicode.org/Public/UCD/latest/ucd/NamesList.html.
+    for line in read_remote_file(&ucd("NamesList.txt"))
+        .lines()
+        .map(|line| line.split(';').next().unwrap())
+        .filter(|line| !line.is_empty())
+    {
+        if !line.starts_with('\t') {
+            if let Some((l, _)) = line.split_once('\t')
+                && (4..=6).contains(&l.len())
+                && let Ok(cp) = u32::from_str_radix(l, 0x10)
+            {
+                // NAME_LINE | RESERVED_LINE
+                last_char = Some(cp)
+            } else {
+                last_char = None
+            }
+        } else if let Some(cp) = last_char
+            && let Some(info_alias) = line.strip_prefix("\t= ")
+        {
+            // ALIAS_LINE
+            info_aliases
+                .entry(cp)
+                .or_default()
+                .push(info_alias.to_owned())
+        }
+    }
+
+    buf.push_str("pub fn info_data(cp: u32) -> &'static [&'static str] {\n");
+    buf.push_str("    match cp {\n");
+    let mut keys = info_aliases.keys().collect::<Vec<_>>();
+    keys.sort();
+    for cp in keys {
+        let aliases = info_aliases.get(cp).unwrap();
+        buf.push_str(&format!("        0x{cp:04X} => &{aliases:?},\n"));
+    }
+    buf.push_str("        _ => &[],\n");
+    buf.push_str("    }\n");
+    buf.push_str("}\n");
+}
+
 fn main() {
     println!("cargo::rerun-if-changed=build.rs");
 
@@ -231,6 +284,7 @@ fn main() {
     build_codepoint_data(&mut buf);
     build_math_data(&mut buf);
     build_alias_data(&mut buf);
+    build_info_data(&mut buf);
 
     let out = std::env::var_os("OUT_DIR").unwrap();
     let dest = Path::new(&out).join("out.rs");

@@ -127,11 +127,13 @@ pub fn get_codepoint_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
 pub fn get_alias_data(codepoint: &[u8]) -> Result<Vec<u8>, &str> {
     let value = decode_codepoint(codepoint)?;
     let (corrections, controls, alternates, figments, abbreviations) = generated::alias_data(value);
+    let info_aliases = generated::info_data(value);
     let mut encoder = Encoder::new();
     encoder.push(corrections);
     encoder.push(controls);
     encoder.push(alternates);
     encoder.push(figments);
     encoder.push(abbreviations);
+    encoder.push(info_aliases);
     Ok(encoder.finish())
 }
