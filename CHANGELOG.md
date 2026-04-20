@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 0.4.0
+
+- Properly isolate text in `codepoint` show rule.
+- Provide informative aliases from NamesList.txt under `codepoint(..).info.aliases`.
+- Math classes now use their [Typst names](https://typst.app/docs/reference/math/class/#parameters-class).
+- Use a Wasm plugin.
+
 ## Version 0.3.2
 
 - Fix a bug where some information would not be retrieved properly.
@@ -14,17 +21,13 @@
 
 - Add `math-class` attribute to codepoints.
     - Some codepoints have their math class overridden by Typst. This is the Unicode math class, not the one used by Typst.
-
 - The `id` of codepoints now returns a string without the `"U+"` prefix.
 
 ## Version 0.2.0
 
 - Codepoints now have an `id` attribute which is its corresponding "U+xxxx" string.
-
 - The `block` attribute of a codepoint now contains a `name`, a `start`, and a `size`.
-
 - Fix an issue that made some codepoints cause a panic.
-
 - Include data from NameAlias.txt.
 
 ## Version 0.1.0
