@@ -67,6 +67,11 @@ def codepoint_range(r):
 def build_plugin():
     print('Building plugin...')
 
+    urllib.request.urlretrieve(
+        'https://www.unicode.org/license.txt',
+        TARGET_DIR.joinpath('UNICODE.LICENSE'),
+    )
+
     BUILD_TARGET = 'wasm32-unknown-unknown'
     PLUGIN_PATH = PLUGIN_DIR.joinpath('target', BUILD_TARGET, 'release', 'unichar_plugin.wasm')
     PLUGIN_NAME = 'plugin.wasm'

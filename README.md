@@ -19,4 +19,4 @@ For more information on how to use this package, take a look at the rendered REA
 
 ## License
 
-The contents of this repository are licensed under the [MIT License](LICENSE). As per the [Unicode Terms of Use](https://www.unicode.org/copyright.html), the [Unicode License v3](https://www.unicode.org/license.txt) applies to the built Typst package.
+The contents of this repository are licensed under the [MIT License](LICENSE). As per the [Unicode Terms of Use](https://www.unicode.org/copyright.html), the [Unicode License v3](https://www.unicode.org/license.txt) applies to the built Wasm plugin.
