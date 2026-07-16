@@ -145,7 +145,7 @@ fn typst_math_class(c: &str) -> &'static str {
         "C" => "closing",
         "D" => "diacritic",
         "F" => "fence",
-        "G" => "glyphpart",
+        "G" => "glyph-part",
         "O" => "opening",
         "L" => "large",
         "P" => "punctuation",
