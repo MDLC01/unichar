@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.4.1
+
+- Update to Unicode 18.0.
+- The Glyph_Part math class is now represented as `"glyph-part"` instead of `"glyphpart"`.
+
 ## Version 0.4.0
 
 - Properly isolate text in `codepoint` show rule.
