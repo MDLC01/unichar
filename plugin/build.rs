@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::shared::{BlockData, CodepointData};
 
-const UNICODE_VERSION: &str = "17.0.0";
+const UNICODE_VERSION: &str = "18.0.0";
 const UTR25_REVISION: &str = "15";
 
 fn parse_codepoint(s: &str) -> u32 {
